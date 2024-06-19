@@ -235,7 +235,7 @@ function MainPage() {
           </button>
           <div className="absolute hidden group-hover:block bg-white shadow-lg rounded-md mt-1 py-1 w-48">
           {/* Update the links below */}
-          <Link to="/autoCTR" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">autoCTR</Link>
+          <Link to="/" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">autoCTR</Link>
           <Link to="/autoEST" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">autoEST(WIP)</Link>
           <Link to="/tutorial" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">Tutorial (How to use)</Link>
           <Link to="/developer-docs" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">Developer Docs</Link>
