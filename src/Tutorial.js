@@ -6,10 +6,10 @@ const Tutorial = () => {
 const navigate = useNavigate();
   return (
     <div className="tutorial-container" style={{ textAlign: "center" }}>
-      <h1 className="tutorial-header">How to Use autoCTR</h1>
+      <h1 className="tutorial-header">How to Use the CTR Automation</h1>
       <div className="step">
-        <h2>Step 1: Accessing autoCTR</h2>
-        <p>Go to the main dashboard and click on the 'autoCTR' tool from the navigation menu.</p>
+        <h2>Step 1: Accessing the CTR Automation</h2>
+        <p>Go to the main dashboard and click on the 'CTR Automation' tool from the navigation menu.</p>
         <img src="/step1.png" alt="Accessing autoCTR" className="tutorial-image" />
       </div>
       <div className="step">
@@ -20,6 +20,7 @@ const navigate = useNavigate();
       <div className="step">
         <h2>Step 3: Pasting and Reviewing Extracted Data</h2>
         <p>Paste your data from the excel sheet. Note, you must paste your Sequence #'s | Facility ID's | and Optional Transmission Numbers. Example is shown below. Once your document is processed, review the extracted data displayed on the screen. </p>
+        <img src="/step3two.png" alt="Reviewing Data" className="tutorial-image" />
         <img src="/step3.png" alt="Reviewing Data" className="tutorial-image" />
       </div>
       <div className="step">

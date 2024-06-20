@@ -334,21 +334,35 @@ function MainPage() {
 
             </table>
             {missingCtrs.length > 0 ? (
-              <div className="mt-4">
-                <h2 className="text-xl font-semibold">CTRs not found:</h2>
-                <ul>
-                  {missingCtrs.map((ctr, index) => (
-                    <li key={index} className="mt-2">
-                      {ctr.sequence} {ctr.facilityId}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              <div className="mt-4">
-                <h2 className="text-xl font-semibold">All CTRs found.</h2>
-              </div>
-            )}
+            <div className="mt-4">
+              <h2 className="text-xl font-semibold">CTRs not found:</h2>
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead>
+                    <tr>
+                      <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Sequence
+                      </th>
+                      <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Facility ID
+                      </th>
+                    </tr>
+                  </thead>
+            
+            <tbody className="bg-white divide-y divide-gray-200">
+              {missingCtrs.map((ctr, index) => (
+                <tr key={index}>
+                  <td className="px-6 py-4 whitespace-nowrap">{ctr.sequence}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{ctr.facilityId}</td>
+                </tr>
+              ))}
+            </tbody>
+        </table>
+      </div>
+    ) : (
+  <div className="mt-4">
+    <h2 className="text-xl font-semibold">All CTRs found.</h2>
+  </div>
+  )}
             <button className="mt-4 bg-green-500 text-white py-2 px-4 rounded-md" onClick={renameAndZipFiles}>Download Renamed Files</button>
             <button className="mt-4 bg-yellow-500 text-white py-2 px-4 rounded-md" onClick={() => setWorkOrderDialogVisible(true)}>Download Edited PDFs</button>
             {workOrderDialogVisible && (
