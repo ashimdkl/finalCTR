@@ -20,6 +20,7 @@ function MainPage() {
   const [workOrderDialogVisible, setWorkOrderDialogVisible] = useState(false);
   const [workOrder, setWorkOrder] = useState("");
   const [popupVisible, setPopupVisible] = useState(false);
+  const [missingCtrs, setMissingCtrs] = useState([]);
 
   const handleFacilityDataChange = (event) => {
     setFacilityData(event.target.value);
@@ -31,9 +32,15 @@ function MainPage() {
 
   const parseFacilityData = (data) => {
     return data.split('\n').map(line => {
-      const [sequence, facilityId] = line.split('\t');
-      return { sequence, facilityId };
+      const [sequence, facilityId, transmission] = line.split('\t');
+      return { sequence, facilityId, transmission };
     });
+  };
+
+  const extractTransmissionNumber = (text) => {
+    const regex = /(\d{6}\/\d{2}\s?\d{1,2}\/\d{3})/;
+    const match = text.match(regex);
+    return match ? match[1].replace(/\s+/g, '') : null;
   };
 
   const handleRenameDrop = (acceptedFiles) => {
@@ -44,6 +51,7 @@ function MainPage() {
 
   const processFacilityData = () => {
     const facilityDataArray = parseFacilityData(facilityData);
+    const missingFacilityData = [...facilityDataArray];
     const renamePromises = renameFiles.map((file) => {
       return new Promise((resolve) => {
         const reader = new FileReader();
@@ -57,9 +65,9 @@ function MainPage() {
             pagePromises.push(pdf.getPage(i).then(async (page) => {
               const textContent = await page.getTextContent();
               const lines = textContent.items.map(item => item.str.replace(/\s+/g, ''));
-              const text = lines.join(' ');
+              const text = lines.join('');
 
-              const regex = /(\d{8}\.\d+)\s+(\d+)/;
+              const regex = /(\d{8}\.\d+)\s*(\d+)/;
               const matches = text.match(regex);
               let facilityId = null;
               if (matches) {
@@ -67,12 +75,31 @@ function MainPage() {
               }
 
               const facilityMatch = facilityDataArray.find(item => item.facilityId === facilityId);
+              if (facilityMatch) {
+                const index = missingFacilityData.findIndex(item => item.facilityId === facilityId);
+                if (index !== -1) missingFacilityData.splice(index, 1);
+              }
+
+              let sequence = facilityMatch ? facilityMatch.sequence : 'not found';
+              let additionalInfo = '';
+
+              if (sequence === 'not found') {
+                const transmissionNumber = extractTransmissionNumber(text);
+                if (transmissionNumber) {
+                  const transmissionMatch = facilityDataArray.find(item => item.transmission && item.transmission.replace(/\s+/g, '') === transmissionNumber);
+                  if (transmissionMatch) {
+                    sequence = transmissionMatch.sequence;
+                    additionalInfo = 'transmission';
+                  }
+                }
+              }
 
               const result = {
                 fileName: file.name,
                 page: `page ${i}`,
-                sequence: facilityMatch ? facilityMatch.sequence : 'not found',
-                facilityId: facilityId || 'not found'
+                sequence,
+                facilityId: facilityId || 'not found',
+                additionalInfo,
               };
 
               return result;
@@ -91,6 +118,7 @@ function MainPage() {
     Promise.all(renamePromises).then((allResults) => {
       const flattenedResults = allResults.flat();
       setResults(flattenedResults);
+      setMissingCtrs(missingFacilityData);
       setLoading(false);
       setFacilityDialogVisible(false);
     });
@@ -235,9 +263,8 @@ function MainPage() {
           </button>
           <div className="absolute hidden group-hover:block bg-white shadow-lg rounded-md mt-1 py-1 w-48">
           {/* Update the links below */}
-          <Link to="/" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">autoCTR</Link>
-          <Link to="/autoEST" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">autoEST(WIP)</Link>
-          <Link to="/tutorial" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">Tutorial (How to use)</Link>
+          <Link to="/" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">CTR Automation</Link>
+          <Link to="/tutorial" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">Tutorial</Link>
           <Link to="/developer-docs" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">Developer Docs</Link>
       </div>
     </div>
@@ -246,10 +273,10 @@ function MainPage() {
         </div>
       </header>
       <main className="flex-grow flex flex-col items-center justify-center text-center">
-        <h1 className="text-3xl font- mb-6">pacificorp ctr automation</h1>
+        <h1 className="text-3xl font- mb-6">PacifiCorp CTR Automation</h1>
         <div {...getRenameRootProps({ className: 'dropzone' })} className="w-full max-w-md bg-white border-2 border-dashed border-gray-300 rounded-md p-6 text-center cursor-pointer">
           <input {...getRenameInputProps()} />
-          <p className="text-gray-500">choose or drag your ctr pdf document here.</p>
+          <p className="text-gray-500">Choose or drag your ctr pdf document here.</p>
         </div>
         {loading && renameFiles.length > 0 ? (
           <div className="mt-4">Loading and processing files...</div>
@@ -268,7 +295,7 @@ function MainPage() {
               cols="50"
               value={facilityData}
               onChange={handleFacilityDataChange}
-              placeholder={`Enter sequence #'s and facility ids, e.g.\n1010\t01339008.0221700\n1020\t01339008.0221761\n1030\t01339008.0221703\n1040\t01339008.0221702`}
+              placeholder={`Enter sequence #'s, facility ids, and optional transmission numbers, e.g.\n1010\t01339008.0221700\n1020\t01339008.0221761\t068038/00 11/028`}
               className="w-full p-2 border border-gray-300 rounded-md mt-2"
             />
             <button onClick={processFacilityData} className="mt-4 bg-blue-500 text-white py-2 px-4 rounded-md">Process Data</button>
@@ -286,17 +313,42 @@ function MainPage() {
                   <th className="px-4 py-2 border">Facility ID</th>
                 </tr>
               </thead>
-              <tbody>
-                {results.map((result, index) => (
-                  <tr key={index}>
-                    <td className="px-4 py-2 border">{result.fileName}</td>
-                    <td className="px-4 py-2 border">{result.page}</td>
-                    <td className="px-4 py-2 border">{result.sequence}</td>
-                    <td className="px-4 py-2 border">{result.facilityId}</td>
-                  </tr>
+            <tbody>
+              {results.map((result, index) => (
+                <tr key={index} className={result.sequence === 'not found' && result.facilityId === 'not found' ? 'bg-red-100' : ''}>
+                  <td className="px-4 py-2 border">{result.fileName}</td>
+                  <td className="px-4 py-2 border">{result.sequence === 'not found' && result.additionalInfo ? `${result.page} ${result.additionalInfo}` : result.page}</td>
+                  <td className="px-4 py-2 border">
+                    {result.sequence === 'not found' && result.facilityId !== 'not found' 
+                      ? 'Please ensure you pasted your ENTIRE spreadsheet.' 
+                      : result.sequence === 'not found' && result.facilityId === 'not found'
+                      ? 'not found, ensure file validity'
+                      : result.sequence}
+                  </td>
+                  <td className="px-4 py-2 border">
+                    {result.facilityId === 'not found' && result.sequence !== 'not found' ? 'transmission' : result.facilityId}
+                  </td>
+                </tr>
                 ))}
-              </tbody>
+            </tbody>
+
             </table>
+            {missingCtrs.length > 0 ? (
+              <div className="mt-4">
+                <h2 className="text-xl font-semibold">CTRs not found:</h2>
+                <ul>
+                  {missingCtrs.map((ctr, index) => (
+                    <li key={index} className="mt-2">
+                      {ctr.sequence} {ctr.facilityId}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <div className="mt-4">
+                <h2 className="text-xl font-semibold">All CTRs found.</h2>
+              </div>
+            )}
             <button className="mt-4 bg-green-500 text-white py-2 px-4 rounded-md" onClick={renameAndZipFiles}>Download Renamed Files</button>
             <button className="mt-4 bg-yellow-500 text-white py-2 px-4 rounded-md" onClick={() => setWorkOrderDialogVisible(true)}>Download Edited PDFs</button>
             {workOrderDialogVisible && (
